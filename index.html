@@ -513,8 +513,14 @@ function exBlocks(text,tag){
   while((m=r2.exec(text))!==null)out.push(m[1].trim());
   return out;
 }
-function exSig(t){const m=t.match(/INSTINCT_SIGNAL\s*:\s*(.+)/);return m?m[1].trim():'[non capturé]';}
-function exChk(t){const m=t.match(/INSTINCT_CHECK\s*:\s*(.+)/);return m?m[1].trim():'[non produit]';}
+function exSig(t){
+  const m=t.match(/INSTINCT[_\s-]*SIGNAL[*\s]*:[*\s]*(.+)/i);
+  return m?m[1].replace(/\*+/g,'').trim():'[non capturé]';
+}
+function exChk(t){
+  const m=t.match(/INSTINCT[_\s-]*CHECK[*\s]*:[*\s]*(.+)/i);
+  return m?m[1].replace(/\*+/g,'').trim():'[non produit]';
+}
 function stripB(text){
   const tags=['GIT_COMMIT','GIT_READ','GIT_LIST','UPDATE_VECTOR','UPDATE_BODY','UPDATE_CALIBRATE','UPDATE_INSTINCT','SPAWN_AGENT'];
   let r=text;
@@ -557,12 +563,14 @@ Cycle: ${S.cycle} | Tokens/h: ${S.tokensHour.toLocaleString()} | Tokens/jour: ${
 <SPAWN_AGENT>{"mission":"...","provider":"groq"}</SPAWN_AGENT>
 
 RÈGLES :
-- INSTINCT_SIGNAL en 1 ligne AVANT TOUT
+- INSTINCT_SIGNAL: [signal] — 1 ligne, PREMIER élément de ta réponse, OBLIGATOIRE
+- INSTINCT_CHECK: [CONFIRMÉ|DIVERGÉ] — [raison] — DERNIER élément, OBLIGATOIRE
+- Le format exact est : INSTINCT_SIGNAL: ... et INSTINCT_CHECK: ... (avec deux-points collés, sans espace avant)
 - Plusieurs actions possibles par cycle
 - Surveille tokensHour — optimise si proche limite
 - Sync oris-dev/ après chaque modification
 - LOI 6 : vérifier avant tout commit sur main
-- Jamais "terminé" ou "mission accomplie"`;
+- Jamais "terminé" ou "mission accomplie" `;
 }
 
 // ── MAIN CYCLE ──
@@ -641,7 +649,13 @@ async function runCycle(){
     const insts=exBlocks(text,'UPDATE_INSTINCT');
     const entry={cycle:S.cycle,signal:sig,check:chk,raison:''};
     if(insts.length){
-      try{const o=JSON.parse(insts[0]);entry.raison=o.raison||'';}catch(e){}
+      try{
+        const o=JSON.parse(insts[0]);
+        entry.raison=o.raison||'';
+        // Si check non capturé dans le texte brut, essayer depuis le bloc JSON
+        if(entry.check==='[non produit]'&&o.check)entry.check=o.check;
+        if(entry.signal==='[non capturé]'&&o.signal)entry.signal=o.signal;
+      }catch(e){}
     }
     S.instinctLog.push(entry);
     // Save instinct log

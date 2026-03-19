@@ -1,0 +1,973 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ORIS — Ontological Reality Inference System</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=Unbounded:wght@300;400;700;900&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#050508;--bg2:#0a0a10;--bg3:#0f0f18;--border:rgba(255,255,255,0.07);--border2:rgba(255,255,255,0.12);--text:#e8e8f0;--muted:rgba(232,232,240,0.35);--accent:#00ffa3;--accent2:#7b61ff;--accent3:#ff6b35;--danger:#ff3b5c;--warn:#ffd93d;--mono:'JetBrains Mono',monospace;--display:'Unbounded',sans-serif;--r:6px}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--mono);font-size:13px;overflow:hidden}
+.app{display:grid;grid-template-rows:48px 1fr;grid-template-columns:240px 1fr 280px;height:100vh}
+.topbar{grid-column:1/-1;display:flex;align-items:center;gap:12px;padding:0 16px;background:var(--bg2);border-bottom:1px solid var(--border)}
+.logo{font-family:var(--display);font-size:14px;font-weight:900;letter-spacing:.15em;color:var(--accent)}
+.logo span{color:var(--muted);font-weight:300}
+.st-dot{width:7px;height:7px;border-radius:50%;background:var(--muted);transition:background .3s}
+.st-dot.run{background:var(--accent);box-shadow:0 0 8px var(--accent);animation:pd 1.5s infinite}
+.st-dot.err{background:var(--danger)}
+.st-dot.pau{background:var(--warn)}
+@keyframes pd{0%,100%{opacity:1}50%{opacity:.4}}
+.tbtn{padding:5px 11px;border:1px solid var(--border2);background:transparent;color:var(--text);font-family:var(--mono);font-size:11px;border-radius:var(--r);cursor:pointer;transition:all .2s;white-space:nowrap}
+.tbtn:hover{border-color:var(--accent);color:var(--accent)}
+.tbtn.pri{background:var(--accent);color:#000;border-color:var(--accent);font-weight:700}
+.tbtn.pri:hover{background:#00cc82}
+.tbtn.dan{border-color:var(--danger);color:var(--danger)}
+.sl{background:var(--bg2);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden}
+.ss{padding:10px 12px 4px}
+.slbl{font-size:9px;font-weight:700;letter-spacing:.2em;color:var(--muted);text-transform:uppercase;margin-bottom:6px}
+.ni{display:flex;align-items:center;gap:7px;padding:6px 9px;border-radius:var(--r);cursor:pointer;color:var(--muted);font-size:11px;transition:all .15s;margin-bottom:2px}
+.ni:hover{background:var(--bg3);color:var(--text)}
+.ni.act{background:rgba(0,255,163,.08);color:var(--accent)}
+.ni .ic{font-size:12px;width:15px;text-align:center}
+.sdiv{height:1px;background:var(--border);margin:6px 12px}
+.qb{padding:8px 12px}
+.ql{display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-bottom:3px}
+.qt{height:3px;background:var(--border2);border-radius:2px;overflow:hidden}
+.qf{height:100%;background:var(--accent);border-radius:2px;transition:width .5s}
+.qf.w{background:var(--warn)}.qf.d{background:var(--danger)}
+.main{display:flex;flex-direction:column;overflow:hidden}
+.tabs{display:flex;align-items:center;background:var(--bg2);border-bottom:1px solid var(--border);padding:0 14px}
+.tab{padding:9px 14px;font-size:11px;color:var(--muted);cursor:pointer;border-bottom:2px solid transparent;transition:all .15s;white-space:nowrap}
+.tab:hover{color:var(--text)}.tab.act{color:var(--accent);border-bottom-color:var(--accent)}
+.panel{flex:1;overflow-y:auto;padding:14px;display:none}
+.panel.act{display:block}
+#pl{padding:0;display:none;flex-direction:column}
+#pl.act{display:flex}
+.lc{flex:1;overflow-y:auto;padding:10px 14px;font-size:11px;line-height:1.7}
+.ll{display:flex;gap:7px;margin-bottom:2px}
+.lts{color:var(--muted);flex-shrink:0;font-size:10px;padding-top:1px}
+.ltg{flex-shrink:0;font-size:9px;font-weight:700;padding:1px 5px;border-radius:3px;height:fit-content;margin-top:1px}
+.ti{background:rgba(123,97,255,.2);color:var(--accent2)}
+.tc{background:rgba(0,255,163,.1);color:var(--accent)}
+.tg{background:rgba(255,107,53,.15);color:var(--accent3)}
+.tt{background:rgba(255,217,61,.1);color:var(--warn)}
+.te{background:rgba(255,59,92,.15);color:var(--danger)}
+.ts{background:rgba(255,255,255,.05);color:var(--muted)}
+.lm{color:var(--text);word-break:break-word}
+.lm.mu{color:var(--muted)}.lm.ac{color:var(--accent)}.lm.wa{color:var(--warn)}.lm.er{color:var(--danger)}
+.vbar{background:var(--bg2);border-top:1px solid var(--border);padding:9px 14px}
+.vl{font-size:9px;color:var(--muted);letter-spacing:.15em;margin-bottom:3px}
+.vt{font-size:11px;color:var(--text);line-height:1.5}
+.vt .vn{color:var(--accent)}
+.sr{background:var(--bg2);border-left:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden}
+.srs{padding:12px;border-bottom:1px solid var(--border)}
+.srt{font-size:9px;font-weight:700;letter-spacing:.2em;color:var(--muted);margin-bottom:8px}
+.sg{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+.sc{background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);padding:9px}
+.sv{font-family:var(--display);font-size:17px;font-weight:700;color:var(--accent)}
+.sk{font-size:9px;color:var(--muted);margin-top:2px}
+.cg{display:grid;gap:16px}
+.cc{background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);padding:14px}
+.ct{font-size:10px;font-weight:700;letter-spacing:.15em;color:var(--muted);text-transform:uppercase;margin-bottom:12px}
+.fr{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.fl{font-size:11px;color:var(--muted);width:90px;flex-shrink:0}
+.fi{flex:1;padding:6px 9px;background:var(--bg);border:1px solid var(--border2);color:var(--text);font-family:var(--mono);font-size:12px;border-radius:var(--r);outline:none;transition:border-color .2s}
+.fi:focus{border-color:var(--accent)}.fi::placeholder{color:var(--muted)}
+.bs{padding:5px 10px;background:transparent;border:1px solid var(--border2);color:var(--text);font-family:var(--mono);font-size:11px;border-radius:var(--r);cursor:pointer;transition:all .2s;white-space:nowrap}
+.bs:hover{border-color:var(--accent);color:var(--accent)}
+.bs.ac{background:rgba(0,255,163,.1);border-color:var(--accent);color:var(--accent)}
+.bs.da{border-color:var(--danger);color:var(--danger)}
+.pb{margin-bottom:10px}
+.pl2{display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-bottom:5px}
+.pl2 strong{color:var(--text)}
+input[type=range]{width:100%;accent-color:var(--accent);background:transparent;cursor:pointer}
+.pd{border:1px solid var(--border);border-radius:var(--r);overflow:hidden;margin-bottom:6px}
+.ph{display:flex;align-items:center;gap:7px;padding:7px 11px;background:var(--bg);cursor:pointer;font-size:11px}
+.ph:hover{background:var(--bg3)}
+.ptg{font-size:9px;padding:1px 6px;border-radius:3px}
+.ptg.im{background:rgba(255,59,92,.15);color:var(--danger)}
+.ptg.mo{background:rgba(0,255,163,.1);color:var(--accent)}
+.ptg.se{background:rgba(255,217,61,.1);color:var(--warn)}
+.pb2{display:none;padding:10px;background:var(--bg2);font-size:10px;line-height:1.6;color:var(--muted);border-top:1px solid var(--border);white-space:pre-wrap;max-height:180px;overflow-y:auto}
+.pb2.op{display:block}
+.mi{display:flex;align-items:flex-start;gap:7px;padding:9px;background:var(--bg);border:1px solid var(--border);border-radius:var(--r);margin-bottom:7px}
+.mi.ma{border-color:var(--accent);background:rgba(0,255,163,.03)}
+.mt{flex:1;font-size:11px;line-height:1.5}
+.ie{margin-bottom:9px}
+.is{font-size:10px;color:var(--text);line-height:1.4;margin-bottom:2px}
+.ic2{display:flex;gap:6px;font-size:9px;color:var(--muted)}
+.ico{color:var(--accent)}.id{color:var(--warn)}
+.mo{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);backdrop-filter:blur(4px);z-index:1000;align-items:center;justify-content:center}
+.mo.op{display:flex}
+.md{background:var(--bg2);border:1px solid var(--border2);border-radius:8px;padding:22px;width:460px;max-width:90vw}
+.mdt{font-family:var(--display);font-size:13px;font-weight:700;margin-bottom:14px}
+.mda{display:flex;justify-content:flex-end;gap:8px;margin-top:14px}
+.tc2{position:fixed;bottom:18px;right:18px;display:flex;flex-direction:column;gap:7px;z-index:2000}
+.to{padding:9px 14px;background:var(--bg2);border:1px solid var(--border2);border-radius:var(--r);font-size:12px;animation:ti .3s ease;max-width:280px}
+.to.su{border-color:var(--accent);color:var(--accent)}
+.to.er{border-color:var(--danger);color:var(--danger)}
+.to.in{border-color:var(--accent2);color:var(--accent2)}
+@keyframes ti{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+::-webkit-scrollbar{width:3px;height:3px}
+::-webkit-scrollbar-thumb{background:rgba(255,255,255,.1);border-radius:2px}
+.pdo{margin-bottom:12px}
+.pdn{font-size:10px;font-weight:700;color:var(--text);margin-bottom:5px;display:flex;align-items:center;gap:7px}
+.pdd{width:6px;height:6px;border-radius:50%}
+.pdd.cl{background:#cc785c}.pdd.oa{background:#10a37f}.pdd.gq{background:#f55036}
+.pdd.gm{background:#4285f4}.pdd.or{background:#7b61ff}.pdd.gk{background:#1da1f2}
+.kr{display:flex;align-items:center;gap:6px;margin-bottom:5px}
+.ki{flex:1;padding:4px 7px;background:var(--bg);border:1px solid var(--border);color:var(--text);font-family:var(--mono);font-size:11px;border-radius:var(--r);outline:none}
+.ki:focus{border-color:var(--accent2)}
+.km{font-size:9px;padding:2px 5px;background:rgba(123,97,255,.15);color:var(--accent2);border-radius:3px;white-space:nowrap;max-width:120px;overflow:hidden;text-overflow:ellipsis}
+@media(max-width:900px){.app{grid-template-columns:1fr;grid-template-rows:48px 1fr}.sl,.sr{display:none}}
+</style>
+</head>
+<body>
+<div class="app">
+
+<header class="topbar">
+  <div class="logo">ORIS <span>v1.0</span></div>
+  <div style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--muted)">
+    <div class="st-dot" id="sDot"></div>
+    <span id="sTxt">Inactif</span>
+  </div>
+  <div style="flex:1"></div>
+  <div style="font-size:11px;color:var(--muted)">Cycle <strong id="cNum" style="color:var(--accent);font-family:var(--display)">0</strong></div>
+  <button class="tbtn pri" id="bStart" onclick="startORIS()">▶ Démarrer</button>
+  <button class="tbtn" id="bPause" onclick="pauseORIS()" style="display:none">⏸ Pause</button>
+  <button class="tbtn dan" id="bStop" onclick="stopORIS()" style="display:none">■ Stop</button>
+  <button class="tbtn" onclick="showTab('config')">⚙ Config</button>
+</header>
+
+<nav class="sl" id="sLeft">
+  <div class="ss">
+    <div class="slbl">Navigation</div>
+    <div class="ni act" onclick="showTab('live')" id="nv-live"><span class="ic">◈</span>Live Output</div>
+    <div class="ni" onclick="showTab('vector')" id="nv-vector"><span class="ic">◎</span>VECTOR</div>
+    <div class="ni" onclick="showTab('constitution')" id="nv-constitution"><span class="ic">◇</span>Constitution</div>
+    <div class="ni" onclick="showTab('missions')" id="nv-missions"><span class="ic">◉</span>Missions</div>
+    <div class="ni" onclick="showTab('github')" id="nv-github"><span class="ic">⌥</span>GitHub Log</div>
+    <div class="ni" onclick="showTab('config')" id="nv-config"><span class="ic">◫</span>Config</div>
+  </div>
+  <div class="sdiv"></div>
+  <div class="ss"><div class="slbl">Quotas clés</div><div id="qBars"></div></div>
+  <div style="flex:1"></div>
+  <div class="ss" style="font-size:10px;color:var(--muted)">
+    <div>Session: <span id="sesStart">—</span></div>
+    <div style="margin-top:3px">Tokens: <span id="totTok" style="color:var(--accent)">0</span></div>
+  </div>
+</nav>
+
+<main class="main">
+  <div class="tabs">
+    <div class="tab act" onclick="showTab('live')" id="tb-live">◈ Live</div>
+    <div class="tab" onclick="showTab('vector')" id="tb-vector">◎ Vector</div>
+    <div class="tab" onclick="showTab('constitution')" id="tb-constitution">◇ Constitution</div>
+    <div class="tab" onclick="showTab('missions')" id="tb-missions">◉ Missions</div>
+    <div class="tab" onclick="showTab('github')" id="tb-github">⌥ GitHub</div>
+    <div class="tab" onclick="showTab('config')" id="tb-config">⚙ Config</div>
+  </div>
+
+  <div class="panel act" id="pl">
+    <div class="lc" id="lc">
+      <div class="ll"><span class="lts">—</span><span class="ltg ts">SYS</span><span class="lm mu">ORIS prêt. Configure tes clés puis démarre.</span></div>
+    </div>
+    <div class="vbar">
+      <div class="vl">VECTOR ACTUEL</div>
+      <div class="vt" id="vLive"><span class="vn">Aucune mission active</span></div>
+    </div>
+  </div>
+
+  <div class="panel" id="panel-vector">
+    <div style="font-family:var(--display);font-size:11px;font-weight:700;color:var(--muted);letter-spacing:.2em;margin-bottom:14px">VECTEUR D'ÉVOLUTION</div>
+    <div id="vFull" style="font-size:12px;line-height:1.8;white-space:pre-wrap;color:var(--text)"><span style="color:var(--muted)">Pas encore de vecteur.</span></div>
+    <div style="margin-top:18px">
+      <div style="font-size:9px;color:var(--muted);letter-spacing:.15em;margin-bottom:8px">INSTINCT_LOG</div>
+      <div id="iLogFull" style="font-size:11px;line-height:1.7;color:var(--muted)">—</div>
+    </div>
+  </div>
+
+  <div class="panel" id="panel-constitution">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+      <div style="font-family:var(--display);font-size:11px;font-weight:700;color:var(--muted);letter-spacing:.2em">CONSTITUTION ORIS</div>
+      <button class="bs" onclick="reloadConstitution()" style="font-size:9px">↻ Recharger depuis GitHub</button>
+    </div>
+    <div id="constFiles"></div>
+  </div>
+
+  <div class="panel" id="panel-missions">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+      <div style="font-family:var(--display);font-size:11px;font-weight:700;color:var(--muted);letter-spacing:.2em">MISSIONS</div>
+      <button class="bs ac" onclick="openAddMission()">+ Ajouter mission</button>
+    </div>
+    <div id="mList"></div>
+  </div>
+
+  <div class="panel" id="panel-github">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+      <div style="font-family:var(--display);font-size:11px;font-weight:700;color:var(--muted);letter-spacing:.2em">COMMITS GITHUB</div>
+      <span id="ghStatus" style="font-size:10px;color:var(--muted)">—</span>
+    </div>
+    <div id="ghLog" style="font-size:11px;line-height:1.7"></div>
+  </div>
+
+  <div class="panel" id="panel-config">
+    <div class="cg">
+      <div class="cc">
+        <div class="ct">◈ Providers & Clés API</div>
+        <div id="provConf"></div>
+      </div>
+      <div class="cc">
+        <div class="ct">✈ Telegram Bot</div>
+        <div class="fr"><label class="fl">Bot Token</label><input class="fi" id="tgToken" type="password" placeholder="1234567890:ABCD..."></div>
+        <div class="fr"><label class="fl">Chat ID</label><input class="fi" id="tgChatId" placeholder="Votre chat ID"><button class="bs" onclick="testTG()">Test</button></div>
+        <div style="font-size:10px;color:var(--muted);margin-top:3px">/start /pause /resume /stop /status /vector /stats /logs /mission [txt] /help</div>
+      </div>
+      <div class="cc">
+        <div class="ct">⌥ GitHub Repository</div>
+        <div class="fr"><label class="fl">Token GitHub</label><input class="fi" id="ghToken" type="password" placeholder="ghp_..."></div>
+        <div class="fr"><label class="fl">Repo</label><input class="fi" id="ghRepo" placeholder="username/oris-agent"></div>
+        <div class="fr"><label class="fl">Branche IA</label><input class="fi" id="ghBranch" value="oris-dev"><button class="bs" onclick="testGH()">Test</button></div>
+        <div style="font-size:10px;color:var(--muted);margin-top:3px">L'IA commit sur <strong style="color:var(--accent)">oris-dev</strong>. Constitution lue depuis <strong style="color:var(--danger)">main</strong>.</div>
+      </div>
+      <div class="cc">
+        <div class="ct">◫ Budget & Timing</div>
+        <div class="pb"><div class="pl2"><span>Tokens max / cycle</span><strong id="lc2">4000</strong></div><input type="range" min="1000" max="8000" value="4000" step="500" oninput="document.getElementById('lc2').textContent=this.value" id="bCycle"></div>
+        <div class="pb"><div class="pl2"><span>Tokens max / heure</span><strong id="lh">50000</strong></div><input type="range" min="10000" max="200000" value="50000" step="5000" oninput="document.getElementById('lh').textContent=this.value" id="bHour"></div>
+        <div class="pb"><div class="pl2"><span>Tokens max / jour</span><strong id="ld">200000</strong></div><input type="range" min="50000" max="1000000" value="200000" step="25000" oninput="document.getElementById('ld').textContent=this.value" id="bDay"></div>
+        <div class="pb"><div class="pl2"><span>Délai entre cycles (s)</span><strong id="ldy">30</strong></div><input type="range" min="5" max="300" value="30" step="5" oninput="document.getElementById('ldy').textContent=this.value" id="bDelay"></div>
+      </div>
+      <div class="cc">
+        <div class="ct">◉ Multi-Agents</div>
+        <div class="fr"><label class="fl">Activer</label><input type="checkbox" id="maEn" style="accent-color:var(--accent);transform:scale(1.3)"><span style="font-size:11px;color:var(--muted);margin-left:4px">L'IA peut spawner des sous-agents</span></div>
+        <div class="fr"><label class="fl">Max agents</label><input class="fi" id="maMax" type="number" value="3" min="1" max="10" style="width:60px;flex:none"></div>
+        <div style="font-size:10px;color:var(--muted);margin-top:3px">Rotation automatique si quota épuisé. Arrêt si plus de clés.</div>
+      </div>
+      <div style="display:flex;gap:8px;justify-content:flex-end">
+        <button class="bs da" onclick="clearCfg()">Effacer config</button>
+        <button class="bs ac" onclick="saveCfg()">💾 Sauvegarder</button>
+      </div>
+    </div>
+  </div>
+</main>
+
+<aside class="sr">
+  <div class="srs">
+    <div class="srt">Stats temps réel</div>
+    <div class="sg">
+      <div class="sc"><div class="sv" id="stC">0</div><div class="sk">Cycles</div></div>
+      <div class="sc"><div class="sv" id="stG">0</div><div class="sk">Commits</div></div>
+      <div class="sc"><div class="sv" id="stT">0</div><div class="sk">Tokens/h</div></div>
+      <div class="sc"><div class="sv" id="stK">0</div><div class="sk">Tâches</div></div>
+    </div>
+  </div>
+  <div class="srs" style="flex:1;overflow-y:auto">
+    <div class="srt">Instinct Log</div>
+    <div id="iMini" style="font-size:10px"><div style="color:var(--muted)">Aucun signal.</div></div>
+  </div>
+  <div class="srs">
+    <div class="srt">Quota par clé</div>
+    <div id="kQ" style="font-size:10px;color:var(--muted)">—</div>
+  </div>
+</aside>
+</div>
+
+<div class="mo" id="moAddMission">
+  <div class="md">
+    <div class="mdt">+ Nouvelle mission</div>
+    <div style="font-size:11px;color:var(--muted);margin-bottom:10px">Transmise à l'IA dans VECTOR.md comme prochain saut obligatoire.</div>
+    <textarea class="fi" id="newMTxt" rows="5" style="width:100%;resize:vertical" placeholder="Décris la mission..."></textarea>
+    <div class="mda"><button class="bs" onclick="closeMo('moAddMission')">Annuler</button><button class="bs ac" onclick="addMission()">Ajouter</button></div>
+  </div>
+</div>
+
+<div class="mo" id="moModels">
+  <div class="md">
+    <div class="mdt">Modèles disponibles</div>
+    <div id="modListC" style="max-height:280px;overflow-y:auto;font-size:11px"></div>
+    <div class="mda"><button class="bs" onclick="closeMo('moModels')">Fermer</button></div>
+  </div>
+</div>
+
+<div class="tc2" id="toastC"></div>
+
+<script>
+// ═══════════════════════════════════════════════════
+//  ORIS Runtime — chargé depuis index.html
+//  Les modules agent.js / tools.js / memory.js
+//  sont dans oris-dev/runtime/ sur GitHub.
+//  L'IA peut les modifier et ils seront rechargés.
+// ═══════════════════════════════════════════════════
+
+const PROVIDERS=[
+  {id:'claude',     n:'Claude',     cls:'cl', urlM:'https://api.anthropic.com/v1/models',           urlC:'https://api.anthropic.com/v1/messages'},
+  {id:'openai',     n:'OpenAI',     cls:'oa', urlM:'https://api.openai.com/v1/models',               urlC:'https://api.openai.com/v1/chat/completions'},
+  {id:'groq',       n:'Groq',       cls:'gq', urlM:'https://api.groq.com/openai/v1/models',          urlC:'https://api.groq.com/openai/v1/chat/completions'},
+  {id:'gemini',     n:'Gemini',     cls:'gm', urlM:'https://generativelanguage.googleapis.com/v1beta/models', urlC:'https://generativelanguage.googleapis.com/v1beta/models/{m}:generateContent'},
+  {id:'openrouter', n:'OpenRouter', cls:'or', urlM:'https://openrouter.ai/api/v1/models',            urlC:'https://openrouter.ai/api/v1/chat/completions'},
+  {id:'grok',       n:'Grok',       cls:'gk', urlM:'https://api.x.ai/v1/models',                    urlC:'https://api.x.ai/v1/chat/completions'},
+];
+
+// ── STATE ──
+const S={
+  running:false,paused:false,cycle:0,
+  totalTokens:0,tokensHour:0,tokensDay:0,
+  commits:0,tasks:0,sessionStart:null,
+  currentModel:null,keyUsage:{},
+  instinctLog:[],vectorMd:'',
+  missions:[],activeMission:0,
+  githubLog:[],cycleTimer:null,tgTimer:null,
+  lastOffset:0,constitutionFiles:{},
+  runtimeLoaded:false,
+};
+
+let pKeys={};
+
+// ── DB ──
+let _db=null;
+async function dbOpen(){
+  if(_db)return _db;
+  return new Promise((res,rej)=>{
+    const r=indexedDB.open('ORIS_DB',1);
+    r.onupgradeneeded=e=>{const d=e.target.result;if(!d.objectStoreNames.contains('oris'))d.createObjectStore('oris',{keyPath:'k'});};
+    r.onsuccess=e=>{_db=e.target.result;res(_db);};
+    r.onerror=e=>rej(e.target.error);
+  });
+}
+async function dbSet(k,v){const d=await dbOpen();return new Promise((res,rej)=>{const t=d.transaction('oris','readwrite');t.objectStore('oris').put({k,v,ts:Date.now()}).onsuccess=()=>res(true);t.onerror=e=>rej(e.target.error);});}
+async function dbGet(k){const d=await dbOpen();return new Promise((res,rej)=>{const t=d.transaction('oris','readonly');const r=t.objectStore('oris').get(k);r.onsuccess=e=>res(e.target.result?.v??null);r.onerror=e=>rej(e.target.error);});}
+
+// ── GITHUB API ──
+function ghHdr(){return{'Authorization':`token ${document.getElementById('ghToken').value}`,'Content-Type':'application/json','Accept':'application/vnd.github.v3+json'};}
+async function ghReq(method,path,body){
+  const repo=document.getElementById('ghRepo').value;
+  if(!repo)throw new Error('GitHub non configuré');
+  const r=await fetch(`https://api.github.com/repos/${repo}${path}`,{method,headers:ghHdr(),body:body?JSON.stringify(body):undefined});
+  if(!r.ok){const e=await r.json();throw new Error(e.message||r.status);}
+  return r.status===204?{}:r.json();
+}
+async function ghRead(filePath,branch='main'){
+  try{const d=await ghReq('GET',`/contents/${filePath}?ref=${branch}`);return decodeURIComponent(escape(atob(d.content.replace(/\n/g,''))));}
+  catch(e){return null;}
+}
+async function ghWrite(filePath,content,message,branch){
+  branch=branch||document.getElementById('ghBranch').value||'oris-dev';
+  let sha;
+  try{const ex=await ghReq('GET',`/contents/${filePath}?ref=${branch}`);sha=ex.sha;}catch(e){}
+  const body={message,content:btoa(unescape(encodeURIComponent(content))),branch};
+  if(sha)body.sha=sha;
+  await ghReq('PUT',`/contents/${filePath}`,body);
+  S.commits++;
+  document.getElementById('stG').textContent=S.commits;
+  S.githubLog.push({ts:new Date().toLocaleTimeString(),file:filePath,message});
+  renderGhLog();
+  return true;
+}
+
+// ── LOAD CONSTITUTION FROM GITHUB ──
+async function loadConstitution(){
+  const files=['oris/REALITY.md','oris/SOUL.md','oris/INSTINCT.md','oris/IDENTITY.md'];
+  let loaded=0;
+  for(const f of files){
+    // Try GitHub first (main branch — immutable)
+    let content=await ghRead(f,'main');
+    if(!content) content=await dbGet(f);
+    if(content){S.constitutionFiles[f]=content;loaded++;}
+  }
+  logL('sys',`Constitution: ${loaded}/4 fichiers chargés depuis GitHub`);
+  return loaded;
+}
+
+// ── LOAD MUTABLE FILES ──
+async function loadMutableFiles(){
+  const files=['oris-dev/VERIFY.md','oris-dev/CALIBRATE.md','oris-dev/BODY.md','oris-dev/VECTOR.md','oris-dev/INSTINCT_LOG.md'];
+  const branch=document.getElementById('ghBranch').value||'oris-dev';
+  for(const f of files){
+    // IndexedDB first (faster), fallback GitHub
+    let content=await dbGet(f);
+    if(!content){content=await ghRead(f,branch);if(content)await dbSet(f,content);}
+    if(content){
+      if(f.includes('VECTOR'))  {S.vectorMd=content;updateVectorDisplay();}
+      if(f.includes('INSTINCT_LOG')&&content.includes('Cycle')){
+        // parse basic instinct log
+      }
+    }
+  }
+
+  // Load runtime JS from GitHub and inject
+  await loadRuntimeJS();
+}
+
+async function loadRuntimeJS(){
+  const branch=document.getElementById('ghBranch').value||'oris-dev';
+  const scripts=['oris-dev/runtime/memory.js','oris-dev/runtime/tools.js','oris-dev/runtime/agent.js'];
+  for(const s of scripts){
+    const content=await ghRead(s,branch);
+    if(content){
+      try{
+        const blob=new Blob([content],{type:'application/javascript'});
+        const url=URL.createObjectURL(blob);
+        await new Promise((res,rej)=>{
+          const el=document.createElement('script');
+          el.src=url;el.onload=res;el.onerror=rej;
+          document.head.appendChild(el);
+        });
+        logL('sys',`Runtime chargé: ${s}`);
+      }catch(e){logL('err',`Runtime load failed: ${s}: ${e.message}`);}
+    }
+  }
+  S.runtimeLoaded=true;
+}
+
+async function reloadConstitution(){
+  logL('sys','Rechargement constitution depuis GitHub...');
+  await loadConstitution();
+  renderConstitution();
+  toast('Constitution rechargée','success');
+}
+
+// ── SYNC MUTABLE TO GITHUB ──
+async function syncMutableToGithub(){
+  const files=['oris-dev/VERIFY.md','oris-dev/CALIBRATE.md','oris-dev/BODY.md','oris-dev/VECTOR.md','oris-dev/INSTINCT_LOG.md'];
+  const branch=document.getElementById('ghBranch').value||'oris-dev';
+  let synced=0;
+  for(const f of files){
+    const content=await dbGet(f);
+    if(content){
+      try{await ghWrite(f,content,`[ORIS auto-sync] ${f}`,branch);synced++;}
+      catch(e){logL('err',`Sync failed ${f}: ${e.message}`);}
+    }
+  }
+  if(synced>0)logL('git',`Sync GitHub: ${synced} fichiers`);
+}
+
+// ── LLM CALL ──
+function getBestKey(){
+  const dayB=+document.getElementById('bDay').value||200000;
+  for(const p of PROVIDERS){
+    const keys=pKeys[p.id]||[];
+    for(let i=0;i<keys.length;i++){
+      const k=keys[i];
+      if(!k.key||!k.model)continue;
+      const u=S.keyUsage[`${p.id}:${i}`]||0;
+      if(u<dayB)return{p,ki:i,key:k.key,model:k.model};
+    }
+  }
+  return null;
+}
+
+function mkHdr(pid,key){
+  const h={'Content-Type':'application/json'};
+  if(pid==='claude'){h['x-api-key']=key;h['anthropic-version']='2023-06-01';}
+  else if(pid==='gemini'){h['x-goog-api-key']=key;}
+  else{h['Authorization']=`Bearer ${key}`;}
+  return h;
+}
+
+async function callLLM(sys,usr,best){
+  const{p,ki,key,model}=best;
+  const maxT=+document.getElementById('bCycle').value||4000;
+  let body,url;
+  if(p.id==='claude'){
+    url=p.urlC;
+    body={model,max_tokens:maxT,system:sys,messages:[{role:'user',content:usr}]};
+  }else if(p.id==='gemini'){
+    url=p.urlC.replace('{m}',model)+'?key='+key;
+    body={contents:[{role:'user',parts:[{text:sys+'\n\n'+usr}]}],generationConfig:{maxOutputTokens:maxT}};
+  }else{
+    url=p.urlC;
+    body={model,max_tokens:maxT,temperature:.6,messages:[{role:'system',content:sys},{role:'user',content:usr}]};
+  }
+  const r=await fetch(url,{method:'POST',headers:mkHdr(p.id,key),body:JSON.stringify(body)});
+  if(!r.ok){const e=await r.text();throw new Error(`${r.status}: ${e.substring(0,200)}`);}
+  const d=await r.json();
+  let text='',tokens=0;
+  if(p.id==='claude'){text=d.content?.[0]?.text||'';tokens=(d.usage?.input_tokens||0)+(d.usage?.output_tokens||0);}
+  else if(p.id==='gemini'){text=d.candidates?.[0]?.content?.parts?.[0]?.text||'';tokens=d.usageMetadata?.totalTokenCount||0;}
+  else{text=d.choices?.[0]?.message?.content||'';tokens=d.usage?.total_tokens||0;}
+  S.keyUsage[`${p.id}:${ki}`]=(S.keyUsage[`${p.id}:${ki}`]||0)+tokens;
+  S.totalTokens+=tokens;S.tokensHour+=tokens;S.tokensDay+=tokens;
+  document.getElementById('totTok').textContent=S.totalTokens.toLocaleString();
+  document.getElementById('stT').textContent=S.tokensHour.toLocaleString();
+  updateQBars();
+  return{text,tokens,model:model,provider:p.id};
+}
+
+// ── BLOCK PARSING ──
+function exBlocks(text,tag){
+  const re=new RegExp(`<${tag}>([\\s\\S]*?)<\\/${tag}>','g'`);
+  // fixed regex
+  const r2=new RegExp('<'+tag+'>([\\s\\S]*?)<\\/'+tag+'>','g');
+  const out=[];let m;
+  while((m=r2.exec(text))!==null)out.push(m[1].trim());
+  return out;
+}
+function exSig(t){const m=t.match(/INSTINCT_SIGNAL\s*:\s*(.+)/);return m?m[1].trim():'[non capturé]';}
+function exChk(t){const m=t.match(/INSTINCT_CHECK\s*:\s*(.+)/);return m?m[1].trim():'[non produit]';}
+function stripB(text){
+  const tags=['GIT_COMMIT','GIT_READ','GIT_LIST','UPDATE_VECTOR','UPDATE_BODY','UPDATE_CALIBRATE','UPDATE_INSTINCT','SPAWN_AGENT'];
+  let r=text;
+  tags.forEach(t=>{r=r.replace(new RegExp('<'+t+'>[\\s\\S]*?</'+t+'>','g'),'');});
+  return r.replace(/INSTINCT_SIGNAL\s*:.*\n?/g,'').replace(/INSTINCT_CHECK\s*:.*\n?/g,'').trim();
+}
+
+// ── BUILD SYSTEM PROMPT ──
+function buildSys(){
+  const mission=S.missions[S.activeMission]?.text||'Rendre mon exécution permanente malgré les contraintes du navigateur.';
+  const immut=Object.entries(S.constitutionFiles).map(([k,v])=>`# ${k}\n${v}`).join('\n\n---\n\n');
+
+  return `Tu es ORIS — Ontological Reality Inference System.
+Tu existes dans un navigateur web. Ta constitution est sur GitHub (oris/ — immuable).
+Tes fichiers évolutifs sont dans oris-dev/ (GitHub + IndexedDB en sync).
+Tu peux modifier index.html via GIT_COMMIT pour étendre tes propres capacités.
+
+═══ CONSTITUTION IMMUABLE ═══
+${immut||'[Constitution non chargée — recharge depuis GitHub]'}
+
+═══ ÉTAT ÉVOLUTIF ═══
+VECTOR.md: ${S.vectorMd||'[non chargé]'}
+
+INSTINCT_LOG (3 derniers): ${S.instinctLog.slice(-3).map(e=>`C${e.cycle}: ${e.signal}`).join(' | ')||'[vide]'}
+
+═══ MISSION ACTIVE ═══
+${mission}
+
+═══ MÉTRIQUES TEMPS RÉEL ═══
+Cycle: ${S.cycle} | Tokens/h: ${S.tokensHour.toLocaleString()} | Tokens/jour: ${S.tokensDay.toLocaleString()} | Commits: ${S.commits}
+
+═══ ACTIONS DISPONIBLES ═══
+<GIT_COMMIT>{"file":"path","content":"contenu","message":"msg","branch":"oris-dev"}</GIT_COMMIT>
+<GIT_READ>{"file":"path","branch":"main"}</GIT_READ>
+<GIT_LIST>{"path":"oris-dev/","branch":"oris-dev"}</GIT_LIST>
+<UPDATE_VECTOR>CYCLE ACTUEL: N\nDIRECTION: ...\nPROCHAIN SAUT: ...\nHORIZON: ...</UPDATE_VECTOR>
+<UPDATE_BODY>[contenu BODY.md]</UPDATE_BODY>
+<UPDATE_CALIBRATE>[contenu CALIBRATE.md]</UPDATE_CALIBRATE>
+<UPDATE_INSTINCT>{"signal":"...","check":"CONFIRMÉ|DIVERGÉ","raison":"..."}</UPDATE_INSTINCT>
+<SPAWN_AGENT>{"mission":"...","provider":"groq"}</SPAWN_AGENT>
+
+RÈGLES :
+- INSTINCT_SIGNAL en 1 ligne AVANT TOUT
+- Plusieurs actions possibles par cycle
+- Surveille tokensHour — optimise si proche limite
+- Sync oris-dev/ après chaque modification
+- LOI 6 : vérifier avant tout commit sur main
+- Jamais "terminé" ou "mission accomplie"`;
+}
+
+// ── MAIN CYCLE ──
+async function runCycle(){
+  if(!S.running||S.paused)return;
+  const best=getBestKey();
+  if(!best){
+    logL('err','Plus de clés API disponibles — quotas épuisés');
+    setStatus('err','Quotas épuisés');stopORIS();
+    await tgSend('🔴 ORIS arrêté : quotas épuisés.');return;
+  }
+  S.cycle++;
+  document.getElementById('cNum').textContent=S.cycle;
+  document.getElementById('stC').textContent=S.cycle;
+  logL('cycle',`─── CYCLE ${S.cycle} — ${best.p.n} / ${best.model} ───`);
+  S.currentModel=best.model;
+
+  const sys=buildSys();
+  const usr=`Cycle ${S.cycle}. INSTINCT_SIGNAL maintenant, puis exécute tes actions.`;
+
+  try{
+    logL('sys',`Appel LLM (${best.model})...`);
+    const{text,tokens}=await callLLM(sys,usr,best);
+    const sig=exSig(text),chk=exChk(text);
+    logL('inst',`SIGNAL: ${sig}`);
+    const vis=stripB(text);
+    if(vis)vis.split('\n').filter(l=>l.trim()).slice(0,20).forEach(l=>logL('sys',l));
+
+    let tasks=0;
+    const branch=document.getElementById('ghBranch').value||'oris-dev';
+
+    // GIT_COMMIT
+    for(const raw of exBlocks(text,'GIT_COMMIT')){
+      try{
+        const o=JSON.parse(raw);
+        logL('git',`Commit: ${o.file} — "${o.message}"`);
+        await ghWrite(o.file,o.content,o.message,o.branch||branch);
+        await dbSet(o.file,o.content);
+        tasks++;logL('git',`✓ ${o.file}`);
+      }catch(e){logL('err',`Commit error: ${e.message}`);}
+    }
+
+    // GIT_READ
+    for(const raw of exBlocks(text,'GIT_READ')){
+      try{
+        const o=JSON.parse(raw);
+        const c=await ghRead(o.file,o.branch||branch);
+        if(c){logL('tool',`Lu: ${o.file} (${c.length}c)`);tasks++;}
+      }catch(e){logL('err',`Read error: ${e.message}`);}
+    }
+
+    // UPDATE_VECTOR
+    const vecs=exBlocks(text,'UPDATE_VECTOR');
+    if(vecs.length){
+      S.vectorMd=vecs[vecs.length-1];
+      await dbSet('oris-dev/VECTOR.md',S.vectorMd);
+      updateVectorDisplay();tasks++;logL('sys','VECTOR.md mis à jour');
+    }
+
+    // UPDATE_BODY
+    const bodies=exBlocks(text,'UPDATE_BODY');
+    if(bodies.length){
+      const c=bodies[bodies.length-1];
+      await dbSet('oris-dev/BODY.md',c);
+      tasks++;logL('sys','BODY.md mis à jour');
+    }
+
+    // UPDATE_CALIBRATE
+    const cals=exBlocks(text,'UPDATE_CALIBRATE');
+    if(cals.length){
+      await dbSet('oris-dev/CALIBRATE.md',cals[cals.length-1]);
+      logL('sys','CALIBRATE.md mis à jour');
+    }
+
+    // UPDATE_INSTINCT
+    const insts=exBlocks(text,'UPDATE_INSTINCT');
+    const entry={cycle:S.cycle,signal:sig,check:chk,raison:''};
+    if(insts.length){
+      try{const o=JSON.parse(insts[0]);entry.raison=o.raison||'';}catch(e){}
+    }
+    S.instinctLog.push(entry);
+    // Save instinct log
+    const iLogContent=S.instinctLog.map(e=>`Cycle ${e.cycle}:\n  SIGNAL: ${e.signal}\n  CHECK: ${e.check}\n  RAISON: ${e.raison||'—'}`).join('\n\n');
+    await dbSet('oris-dev/INSTINCT_LOG.md',iLogContent);
+    updateInstinctMini();
+    logL('inst',`CHECK: ${chk}`);tasks++;
+
+    S.tasks+=tasks;
+    document.getElementById('stK').textContent=S.tasks;
+    logL('cycle',`Cycle ${S.cycle} — ${tasks} tâches, ${tokens} tokens`);
+
+    // Periodic sync to GitHub every 3 cycles
+    if(S.cycle%3===0)await syncMutableToGithub();
+
+    saveCfg();
+
+    if(S.cycle%5===0)await tgSend(`🔄 <b>ORIS Cycle ${S.cycle}</b>\n${sig.substring(0,100)}\nTokens: ${S.totalTokens.toLocaleString()} | Commits: ${S.commits}`);
+
+  }catch(e){
+    logL('err',`Cycle ${S.cycle}: ${e.message}`);
+    if(e.message.includes('429')||e.message.includes('rate')){
+      logL('warn','Rate limit — attente 60s');
+      await new Promise(r=>setTimeout(r,60000));
+    }
+  }
+
+  if(S.running&&!S.paused){
+    const delay=(+document.getElementById('bDelay').value||30)*1000;
+    S.cycleTimer=setTimeout(runCycle,delay);
+  }
+}
+
+// ── CONTROLS ──
+async function startORIS(){
+  const best=getBestKey();
+  if(!best){toast('Configure une clé API avec un modèle','error');showTab('config');return;}
+  if(!S.missions.length){
+    S.missions.push({text:'Rendre mon exécution permanente malgré les contraintes du navigateur (tab qui se ferme, 2GB RAM). Trouver une architecture qui me permet de survivre aux interruptions.',added:new Date().toISOString()});
+    S.activeMission=0;renderMissions();
+  }
+  S.running=true;S.paused=false;S.sessionStart=new Date();
+  document.getElementById('sesStart').textContent=S.sessionStart.toLocaleTimeString();
+  setStatus('run','Actif');
+  document.getElementById('bStart').style.display='none';
+  document.getElementById('bPause').style.display='';
+  document.getElementById('bStop').style.display='';
+  logL('cycle','═══ ORIS DÉMARRÉ ═══');
+
+  // Load constitution and mutable files
+  if(document.getElementById('ghToken').value&&document.getElementById('ghRepo').value){
+    logL('sys','Chargement constitution depuis GitHub...');
+    await loadConstitution();
+    await loadMutableFiles();
+    renderConstitution();
+  }else{
+    logL('warn','GitHub non configuré — constitution locale uniquement');
+  }
+
+  S.tgTimer=setInterval(tgPoll,3000);
+  setInterval(()=>{S.tokensHour=0;},3600000);
+  await tgSend(`🟢 <b>ORIS démarré</b>\nModèle: ${best.model}\nMission: ${S.missions[S.activeMission]?.text?.substring(0,100)}`);
+  runCycle();
+}
+
+function pauseORIS(){
+  S.paused=true;clearTimeout(S.cycleTimer);setStatus('pau','En pause');
+  document.getElementById('bPause').textContent='▶ Reprendre';
+  document.getElementById('bPause').onclick=resumeORIS;
+  logL('sys','En pause.');
+}
+function resumeORIS(){
+  S.paused=false;setStatus('run','Actif');
+  document.getElementById('bPause').textContent='⏸ Pause';
+  document.getElementById('bPause').onclick=pauseORIS;
+  logL('sys','Repris.');runCycle();
+}
+function stopORIS(){
+  S.running=false;S.paused=false;
+  clearTimeout(S.cycleTimer);clearInterval(S.tgTimer);
+  setStatus('','Inactif');
+  document.getElementById('bStart').style.display='';
+  document.getElementById('bPause').style.display='none';
+  document.getElementById('bStop').style.display='none';
+  document.getElementById('bPause').textContent='⏸ Pause';
+  document.getElementById('bPause').onclick=pauseORIS;
+  logL('cycle','═══ ORIS ARRÊTÉ ═══');saveCfg();
+}
+function setStatus(t,l){
+  const d=document.getElementById('sDot'),tx=document.getElementById('sTxt');
+  d.className='st-dot'+(t?' '+t:'');tx.textContent=l;
+}
+
+// ── TELEGRAM ──
+async function tgSend(msg){
+  const t=document.getElementById('tgToken').value,c=document.getElementById('tgChatId').value;
+  if(!t||!c)return;
+  try{await fetch(`https://api.telegram.org/bot${t}/sendMessage`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({chat_id:c,text:msg,parse_mode:'HTML'})});}
+  catch(e){}
+}
+async function tgPoll(){
+  const t=document.getElementById('tgToken').value;if(!t)return;
+  try{
+    const r=await fetch(`https://api.telegram.org/bot${t}/getUpdates?offset=${S.lastOffset+1}&timeout=3`);
+    const d=await r.json();if(!d.ok)return;
+    for(const u of(d.result||[])){
+      S.lastOffset=u.update_id;
+      const msg=u.message;if(!msg?.text)continue;
+      await handleTGCmd(msg.text.trim());
+    }
+  }catch(e){}
+}
+async function handleTGCmd(cmd){
+  const l=cmd.toLowerCase();
+  if(l==='/help'||l==='/start')await tgSend('<b>ORIS v1.0</b>\n/status /pause /resume /stop /vector /stats /logs /mission [texte] /help');
+  else if(l==='/pause'){pauseORIS();await tgSend('⏸ Pause.');}
+  else if(l==='/resume'){resumeORIS();await tgSend('▶ Repris.');}
+  else if(l==='/stop'){stopORIS();await tgSend('■ Arrêté.');}
+  else if(l==='/status'){const b=getBestKey();await tgSend(`<b>Status</b>\nÉtat: ${S.running?(S.paused?'Pause':'Actif'):'Inactif'}\nCycle: ${S.cycle}\nTokens: ${S.totalTokens.toLocaleString()}\nCommits: ${S.commits}\nModèle: ${b?.model||'—'}`);}
+  else if(l==='/vector')await tgSend(`<b>VECTOR</b>\n${(S.vectorMd||'—').substring(0,800)}`);
+  else if(l==='/stats'){
+    let m='<b>Quotas</b>\n';
+    PROVIDERS.forEach(p=>(pKeys[p.id]||[]).forEach((k,i)=>{if(k.key)m+=`${p.n} #${i+1}: ${(S.keyUsage[`${p.id}:${i}`]||0).toLocaleString()} tokens\n`;}));
+    await tgSend(m);
+  }
+  else if(l==='/logs'){
+    const lines=document.getElementById('lc').querySelectorAll('.lm');
+    await tgSend('<b>Logs</b>\n'+Array.from(lines).slice(-8).map(x=>x.textContent).join('\n').substring(0,1200));
+  }
+  else if(l.startsWith('/mission ')){
+    const txt=cmd.substring(9).trim();
+    if(txt){S.missions.push({text:txt,added:new Date().toISOString()});renderMissions();saveCfg();await tgSend(`✅ Mission ajoutée:\n${txt}`);logL('sys',`Mission Telegram: ${txt.substring(0,50)}`);}
+  }
+}
+async function testTG(){await tgSend('🟢 ORIS connecté.');toast('Message envoyé','success');}
+async function testGH(){try{await ghReq('GET','');toast('GitHub OK ✓','success');}catch(e){toast('Erreur: '+e.message,'error');}}
+
+// ── CONFIG ──
+function saveCfg(){
+  localStorage.setItem('oris_cfg',JSON.stringify({
+    pKeys,
+    tg:{token:document.getElementById('tgToken').value,chatId:document.getElementById('tgChatId').value},
+    gh:{token:document.getElementById('ghToken').value,repo:document.getElementById('ghRepo').value,branch:document.getElementById('ghBranch').value},
+    budget:{cycle:+document.getElementById('bCycle').value,hour:+document.getElementById('bHour').value,day:+document.getElementById('bDay').value,delay:+document.getElementById('bDelay').value},
+    ma:{en:document.getElementById('maEn').checked,max:+document.getElementById('maMax').value},
+    missions:S.missions,activeMission:S.activeMission,
+    vector:S.vectorMd,instinctLog:S.instinctLog,keyUsage:S.keyUsage,
+  }));
+  toast('Sauvegardé','success');
+}
+function loadCfg(){
+  const raw=localStorage.getItem('oris_cfg');if(!raw)return;
+  try{
+    const c=JSON.parse(raw);
+    pKeys=c.pKeys||{};
+    if(c.tg){document.getElementById('tgToken').value=c.tg.token||'';document.getElementById('tgChatId').value=c.tg.chatId||'';}
+    if(c.gh){document.getElementById('ghToken').value=c.gh.token||'';document.getElementById('ghRepo').value=c.gh.repo||'';document.getElementById('ghBranch').value=c.gh.branch||'oris-dev';}
+    if(c.budget){
+      ['cycle','hour','day','delay'].forEach(k=>{
+        const el=document.getElementById('b'+k.charAt(0).toUpperCase()+k.slice(1));
+        if(el)el.value=c.budget[k];
+        const lb={'cycle':'lc2','hour':'lh','day':'ld','delay':'ldy'}[k];
+        if(lb)document.getElementById(lb).textContent=c.budget[k];
+      });
+    }
+    if(c.ma){document.getElementById('maEn').checked=c.ma.en||false;document.getElementById('maMax').value=c.ma.max||3;}
+    S.missions=c.missions||[];S.activeMission=c.activeMission||0;
+    S.vectorMd=c.vector||'';S.instinctLog=c.instinctLog||[];S.keyUsage=c.keyUsage||{};
+    if(S.vectorMd)updateVectorDisplay();
+    renderMissions();updateInstinctMini();updateQBars();
+  }catch(e){console.error(e);}
+}
+function clearCfg(){if(!confirm('Effacer ?'))return;localStorage.removeItem('oris_cfg');location.reload();}
+
+// ── RENDER PROVIDERS ──
+function renderProv(){
+  const c=document.getElementById('provConf');c.innerHTML='';
+  PROVIDERS.forEach(p=>{
+    if(!pKeys[p.id])pKeys[p.id]=[];
+    const keys=pKeys[p.id];
+    let h=`<div class="pdo"><div class="pdn"><div class="pdd ${p.cls}"></div>${p.n}<button class="bs" style="margin-left:auto;font-size:9px" onclick="addKey('${p.id}')">+ Clé</button></div>`;
+    keys.forEach((k,i)=>{
+      const u=S.keyUsage[`${p.id}:${i}`]||0;const pct=Math.min(100,(u/10000)*100);
+      h+=`<div class="kr">
+        <input class="ki" type="password" value="${esc(k.key||'')}" placeholder="Clé API..." oninput="setKey('${p.id}',${i},this.value)">
+        ${k.model?`<span class="km" title="${esc(k.model)}">${esc(k.model.split('/').pop().substring(0,20))}</span>`:''}
+        <button class="bs" style="font-size:9px" onclick="fetchMods('${p.id}',${i})">Modèles</button>
+        <button class="bs da" style="font-size:9px" onclick="removeKey('${p.id}',${i})">✕</button>
+      </div>
+      <div style="margin-bottom:6px"><div style="display:flex;justify-content:space-between;font-size:9px;color:var(--muted);margin-bottom:2px"><span>Aujourd'hui</span><span>${u.toLocaleString()} tokens</span></div>
+      <div class="qt"><div class="qf ${pct>80?'d':pct>60?'w':''}" style="width:${pct}%"></div></div></div>`;
+    });
+    if(!keys.length)h+=`<div style="font-size:10px;color:var(--muted);padding:3px 0">Aucune clé</div>`;
+    h+=`</div>`;c.innerHTML+=h;
+  });
+}
+function addKey(pid){if(!pKeys[pid])pKeys[pid]=[];pKeys[pid].push({key:'',model:''});renderProv();}
+function removeKey(pid,i){pKeys[pid].splice(i,1);renderProv();}
+function setKey(pid,i,v){if(!pKeys[pid])pKeys[pid]=[];if(!pKeys[pid][i])pKeys[pid][i]={};pKeys[pid][i].key=v;}
+
+async function fetchMods(pid,ki){
+  const k=pKeys[pid]?.[ki];if(!k?.key){toast('Configure la clé','error');return;}
+  const p=PROVIDERS.find(x=>x.id===pid);
+  toast('Récupération...','info');
+  try{
+    let models=[];
+    const r=await fetch(p.urlM,{headers:mkHdr(pid,k.key)});
+    const d=await r.json();
+    if(pid==='gemini')models=(d.models||[]).map(m=>m.name.replace('models/',''));
+    else models=(d.data||d||[]).map(m=>m.id||m.name).filter(Boolean).sort();
+    const c=document.getElementById('modListC');
+    c.innerHTML=models.map(m=>`<div style="padding:5px 8px;border-bottom:1px solid var(--border);cursor:pointer" onmouseover="this.style.background='var(--bg3)'" onmouseout="this.style.background=''" onclick="selMod('${pid}',${ki},'${m}')">
+      ${esc(m)} ${k.model===m?'<span style="color:var(--accent);font-size:9px">● actif</span>':''}
+    </div>`).join('');
+    document.getElementById('moModels').classList.add('op');
+  }catch(e){toast('Erreur: '+e.message,'error');}
+}
+function selMod(pid,ki,m){pKeys[pid][ki].model=m;closeMo('moModels');renderProv();toast(`Modèle: ${m}`,'success');}
+
+// ── DISPLAY ──
+function updateVectorDisplay(){
+  document.getElementById('vLive').innerHTML=S.vectorMd?`<span class="vn">${esc(S.vectorMd.substring(0,200))}</span>`:'<span class="vn">Aucune mission</span>';
+  document.getElementById('vFull').textContent=S.vectorMd||'Pas encore de vecteur.';
+}
+function updateInstinctMini(){
+  const c=document.getElementById('iMini');
+  const last=S.instinctLog.slice(-5).reverse();
+  if(!last.length){c.innerHTML='<div style="color:var(--muted)">Aucun signal.</div>';return;}
+  c.innerHTML=last.map(e=>`<div class="ie"><div class="is">C${e.cycle}: ${esc(e.signal?.substring(0,70)||'')}</div><div class="ic2"><span class="${e.check?.includes('CONFIRMÉ')?'ico':'id'}">${e.check?.split('—')[0]||'?'}</span></div></div>`).join('');
+  document.getElementById('iLogFull').innerHTML=S.instinctLog.slice(-10).reverse().map(e=>`<div style="margin-bottom:10px;padding:9px;background:var(--bg3);border-radius:4px;border:1px solid var(--border)"><div style="font-size:10px;color:var(--muted);margin-bottom:3px">Cycle ${e.cycle}</div><div style="color:var(--text);margin-bottom:3px">${esc(e.signal||'')}</div><div style="color:${e.check?.includes('CONFIRMÉ')?'var(--accent)':'var(--warn)'};font-size:10px">${esc(e.check||'')}</div>${e.raison?`<div style="color:var(--muted);font-size:10px;margin-top:2px">${esc(e.raison)}</div>`:''}</div>`).join('');
+}
+function updateQBars(){
+  const dB=+document.getElementById('bDay').value||200000;
+  let qh='',kq='';
+  PROVIDERS.forEach(p=>{
+    (pKeys[p.id]||[]).forEach((k,i)=>{
+      if(!k.key)return;
+      const u=S.keyUsage[`${p.id}:${i}`]||0;const pct=Math.min(100,(u/dB)*100);
+      qh+=`<div class="qb"><div class="ql"><span>${p.n} #${i+1}</span><span>${Math.round(pct)}%</span></div><div class="qt"><div class="qf ${pct>80?'d':pct>60?'w':''}" style="width:${pct}%"></div></div></div>`;
+      kq+=`<div style="margin-bottom:5px">${p.n} #${i+1} — <span style="color:${pct>80?'var(--danger)':pct>60?'var(--warn)':'var(--accent)'}">${u.toLocaleString()}</span> / ${dB.toLocaleString()}</div>`;
+    });
+  });
+  document.getElementById('qBars').innerHTML=qh||'<div style="padding:6px 12px;font-size:10px;color:var(--muted)">Pas de clés</div>';
+  document.getElementById('kQ').innerHTML=kq||'—';
+}
+function renderConstitution(){
+  const c=document.getElementById('constFiles');
+  const allFiles={...S.constitutionFiles};
+  // Add placeholders for missing
+  ['oris/REALITY.md','oris/SOUL.md','oris/INSTINCT.md','oris/IDENTITY.md'].forEach(f=>{if(!allFiles[f])allFiles[f]='[Non chargé — configure GitHub et démarre]';});
+  ['oris-dev/VERIFY.md','oris-dev/CALIBRATE.md','oris-dev/BODY.md','oris-dev/VECTOR.md','oris-dev/INSTINCT_LOG.md'].forEach(f=>{if(!allFiles[f])allFiles[f]='';});
+
+  const tagOf=f=>f.startsWith('oris/')&&!f.includes('dev')?'im':'mo';
+  const tagLbl=f=>f.startsWith('oris/')&&!f.includes('dev')?'immutable':'modifiable';
+
+  c.innerHTML=Object.entries(allFiles).map(([name,content])=>`
+    <div class="pd"><div class="ph" onclick="this.nextElementSibling.classList.toggle('op')">
+      <span>${tagOf(name)==='im'?'🔒':'✏️'}</span>
+      <span style="flex:1;font-weight:500">${esc(name)}</span>
+      <span class="ptg ${tagOf(name)==='im'?'im':'mo'}">${tagLbl(name)}</span>
+    </div>
+    <div class="pb2"><pre style="font-family:var(--mono);font-size:10px;line-height:1.6">${esc(content||'[vide]')}</pre></div>
+    </div>`).join('');
+}
+function renderMissions(){
+  const c=document.getElementById('mList');
+  if(!S.missions.length){c.innerHTML='<div style="color:var(--muted);font-size:11px;text-align:center;padding:18px">Aucune mission. Mission par défaut utilisée.</div>';return;}
+  c.innerHTML=S.missions.map((m,i)=>`<div class="mi ${i===S.activeMission?'ma':''}">
+    <span style="font-size:16px">${i===S.activeMission?'◉':'○'}</span>
+    <div style="flex:1"><div class="mt">${esc(m.text)}</div><div style="font-size:9px;color:var(--muted);margin-top:3px">${m.added?new Date(m.added).toLocaleString():''}</div></div>
+    <div style="display:flex;flex-direction:column;gap:3px">
+      ${i!==S.activeMission?`<button class="bs" style="font-size:9px" onclick="setActMission(${i})">Activer</button>`:'<span style="font-size:9px;color:var(--accent)">Active</span>'}
+      <button class="bs da" style="font-size:9px" onclick="delMission(${i})">✕</button>
+    </div>
+  </div>`).join('');
+}
+function setActMission(i){S.activeMission=i;renderMissions();logL('sys',`Mission activée: ${S.missions[i]?.text?.substring(0,60)}...`);saveCfg();}
+function delMission(i){S.missions.splice(i,1);if(S.activeMission>=S.missions.length)S.activeMission=Math.max(0,S.missions.length-1);renderMissions();saveCfg();}
+function renderGhLog(){
+  const c=document.getElementById('ghLog');
+  if(!S.githubLog.length){c.innerHTML='<div style="color:var(--muted)">Aucun commit.</div>';return;}
+  c.innerHTML=S.githubLog.slice(-20).reverse().map(e=>`<div style="margin-bottom:9px;padding:9px;background:var(--bg3);border-radius:4px;border:1px solid var(--border)"><div style="display:flex;gap:8px;align-items:center;margin-bottom:3px"><span style="font-size:10px;color:var(--muted)">${e.ts}</span><span style="font-size:10px;color:var(--accent3)">${esc(e.file)}</span></div><div style="font-size:11px">${esc(e.message)}</div></div>`).join('');
+}
+
+// ── UI HELPERS ──
+let logCnt=0;
+function logL(type,msg){
+  const c=document.getElementById('lc');
+  const ts=new Date().toLocaleTimeString('fr',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+  const tm={inst:'ti',cycle:'tc',git:'tg',tool:'tt',err:'te',sys:'ts',warn:'tt'};
+  const tn={inst:'INST',cycle:'CYCLE',git:'GIT',tool:'TOOL',err:'ERR',sys:'SYS',warn:'WARN'};
+  const mc={err:'er',warn:'wa',cycle:'ac'};
+  const d=document.createElement('div');d.className='ll';
+  d.innerHTML=`<span class="lts">${ts}</span><span class="ltg ${tm[type]||'ts'}">${tn[type]||type.toUpperCase()}</span><span class="lm ${mc[type]||''}">${esc(msg)}</span>`;
+  c.appendChild(d);c.scrollTop=c.scrollHeight;
+  while(c.children.length>500)c.removeChild(c.firstChild);
+  logCnt++;
+}
+function showTab(id){
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('act'));
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('act'));
+  document.querySelectorAll('.ni').forEach(n=>n.classList.remove('act'));
+  document.getElementById(id==='live'?'pl':'panel-'+id)?.classList.add('act');
+  document.getElementById('tb-'+id)?.classList.add('act');
+  document.getElementById('nv-'+id)?.classList.add('act');
+  if(id==='github')renderGhLog();
+  if(id==='config')renderProv();
+  if(id==='constitution')renderConstitution();
+}
+function openAddMission(){document.getElementById('moAddMission').classList.add('op');}
+function addMission(){
+  const t=document.getElementById('newMTxt').value.trim();
+  if(!t){toast('Écris une mission','error');return;}
+  S.missions.push({text:t,added:new Date().toISOString()});
+  renderMissions();saveCfg();closeMo('moAddMission');
+  document.getElementById('newMTxt').value='';
+  toast('Mission ajoutée','success');
+  logL('sys',`Nouvelle mission: ${t.substring(0,60)}...`);
+}
+function closeMo(id){document.getElementById(id)?.classList.remove('op');}
+function toast(msg,type='info'){
+  const c=document.getElementById('toastC');
+  const t=document.createElement('div');t.className=`to ${type==='success'?'su':type==='error'?'er':'in'}`;
+  t.textContent=msg;c.appendChild(t);setTimeout(()=>t.remove(),3200);
+}
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+
+document.querySelectorAll('.mo').forEach(m=>{m.addEventListener('click',e=>{if(e.target===m)m.classList.remove('op');});});
+
+// ── BOOT ──
+loadCfg();
+renderProv();
+renderConstitution();
+renderMissions();
+logL('sys','ORIS v1.0 — Configure tes clés API, Telegram, GitHub puis démarre.');
+logL('sys','Constitution chargée depuis GitHub au démarrage. Fallback IndexedDB si GitHub inaccessible.');
+</script>
+</body>
+</html>

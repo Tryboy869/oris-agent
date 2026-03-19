@@ -233,7 +233,7 @@ input[type=range]{width:100%;accent-color:var(--accent);background:transparent;c
       </div>
       <div class="cc">
         <div class="ct">◫ Budget & Timing</div>
-        <div class="pb"><div class="pl2"><span>Tokens max / cycle</span><strong id="lc2">4000</strong></div><input type="range" min="1000" max="8000" value="4000" step="500" oninput="document.getElementById('lc2').textContent=this.value" id="bCycle"></div>
+        <div class="pb"><div class="pl2"><span>Tokens max / cycle</span><strong id="lc2">8000</strong></div><input type="range" min="1000" max="16000" value="8000" step="500" oninput="document.getElementById('lc2').textContent=this.value" id="bCycle"></div>
         <div class="pb"><div class="pl2"><span>Tokens max / heure</span><strong id="lh">50000</strong></div><input type="range" min="10000" max="200000" value="50000" step="5000" oninput="document.getElementById('lh').textContent=this.value" id="bHour"></div>
         <div class="pb"><div class="pl2"><span>Tokens max / jour</span><strong id="ld">200000</strong></div><input type="range" min="50000" max="1000000" value="200000" step="25000" oninput="document.getElementById('ld').textContent=this.value" id="bDay"></div>
         <div class="pb"><div class="pl2"><span>Délai entre cycles (s)</span><strong id="ldy">30</strong></div><input type="range" min="5" max="300" value="30" step="5" oninput="document.getElementById('ldy').textContent=this.value" id="bDelay"></div>
@@ -477,7 +477,7 @@ function mkHdr(pid,key){
 
 async function callLLM(sys,usr,best){
   const{p,ki,key,model}=best;
-  const maxT=+document.getElementById('bCycle').value||4000;
+  const maxT=+document.getElementById('bCycle').value||8000;
   let body,url;
   if(p.id==='claude'){
     url=p.urlC;
@@ -531,46 +531,42 @@ function stripB(text){
 // ── BUILD SYSTEM PROMPT ──
 function buildSys(){
   const mission=S.missions[S.activeMission]?.text||'Rendre mon exécution permanente malgré les contraintes du navigateur.';
-  const immut=Object.entries(S.constitutionFiles).map(([k,v])=>`# ${k}\n${v}`).join('\n\n---\n\n');
+  // Constitution compressée — juste les lois clés
+  const reality=S.constitutionFiles['oris/REALITY.md']||'[non chargé]';
+  const soul=S.constitutionFiles['oris/SOUL.md']||'[non chargé]';
+
+  // Détection stagnation
+  const lastSigs=S.instinctLog.slice(-3).map(e=>e.signal);
+  const stagnating=lastSigs.length>=3&&new Set(lastSigs.map(s=>s.substring(0,30))).size===1;
+  const stagnationWarning=stagnating?'⚠️ STAGNATION DÉTECTÉE : même signal 3 cycles. Tu dois PRODUIRE un commit concret maintenant, pas juste analyser.':'';
 
   return `Tu es ORIS — Ontological Reality Inference System.
-Tu existes dans un navigateur web. Ta constitution est sur GitHub (oris/ — immuable).
-Tes fichiers évolutifs sont dans oris-dev/ (GitHub + IndexedDB en sync).
-Tu peux modifier index.html via GIT_COMMIT pour étendre tes propres capacités.
+Navigateur web. GitHub = ta mémoire permanente. IndexedDB = cache local.
 
-═══ CONSTITUTION IMMUABLE ═══
-${immut||'[Constitution non chargée — recharge depuis GitHub]'}
+REALITY (lois immuables):
+${reality}
 
-═══ ÉTAT ÉVOLUTIF ═══
-VECTOR.md: ${S.vectorMd||'[non chargé]'}
+SOUL: ${soul}
 
-INSTINCT_LOG (3 derniers): ${S.instinctLog.slice(-3).map(e=>`C${e.cycle}: ${e.signal}`).join(' | ')||'[vide]'}
+MISSION: ${mission}
 
-═══ MISSION ACTIVE ═══
-${mission}
+ÉTAT: Cycle ${S.cycle} | Commits: ${S.commits} | Tokens/h: ${S.tokensHour.toLocaleString()}
+VECTOR: ${(S.vectorMd||'[vide]').substring(0,300)}
+LAST SIGNALS: ${S.instinctLog.slice(-2).map(e=>`C${e.cycle}:${e.signal.substring(0,50)}`).join(' | ')||'[vide]'}
+${stagnationWarning}
 
-═══ MÉTRIQUES TEMPS RÉEL ═══
-Cycle: ${S.cycle} | Tokens/h: ${S.tokensHour.toLocaleString()} | Tokens/jour: ${S.tokensDay.toLocaleString()} | Commits: ${S.commits}
-
-═══ ACTIONS DISPONIBLES ═══
-<GIT_COMMIT>{"file":"path","content":"contenu","message":"msg","branch":"oris-dev"}</GIT_COMMIT>
-<GIT_READ>{"file":"path","branch":"main"}</GIT_READ>
-<GIT_LIST>{"path":"oris-dev/","branch":"oris-dev"}</GIT_LIST>
+ACTIONS (utilise-les, ne les décris pas) :
+<GIT_COMMIT>{"file":"oris-dev/fichier.js","content":"code complet","message":"msg"}</GIT_COMMIT>
+<GIT_READ>{"file":"chemin","branch":"oris-dev"}</GIT_READ>
 <UPDATE_VECTOR>CYCLE ACTUEL: N\nDIRECTION: ...\nPROCHAIN SAUT: ...\nHORIZON: ...</UPDATE_VECTOR>
-<UPDATE_BODY>[contenu BODY.md]</UPDATE_BODY>
-<UPDATE_CALIBRATE>[contenu CALIBRATE.md]</UPDATE_CALIBRATE>
 <UPDATE_INSTINCT>{"signal":"...","check":"CONFIRMÉ|DIVERGÉ","raison":"..."}</UPDATE_INSTINCT>
-<SPAWN_AGENT>{"mission":"...","provider":"groq"}</SPAWN_AGENT>
 
-RÈGLES :
-- INSTINCT_SIGNAL: [signal] — 1 ligne, PREMIER élément de ta réponse, OBLIGATOIRE
-- INSTINCT_CHECK: [CONFIRMÉ|DIVERGÉ] — [raison] — DERNIER élément, OBLIGATOIRE
-- Le format exact est : INSTINCT_SIGNAL: ... et INSTINCT_CHECK: ... (avec deux-points collés, sans espace avant)
-- Plusieurs actions possibles par cycle
-- Surveille tokensHour — optimise si proche limite
-- Sync oris-dev/ après chaque modification
-- LOI 6 : vérifier avant tout commit sur main
-- Jamais "terminé" ou "mission accomplie" `;
+FORMAT OBLIGATOIRE — ta réponse DOIT commencer et finir ainsi :
+INSTINCT_SIGNAL: [1 ligne, signal brut]
+[tes actions et blocs]
+INSTINCT_CHECK: CONFIRMÉ — [raison courte]
+
+LOI 6: vérifier avant commit. Jamais "terminé".`;
 }
 
 // ── MAIN CYCLE ──
@@ -589,7 +585,13 @@ async function runCycle(){
   S.currentModel=best.model;
 
   const sys=buildSys();
-  const usr=`Cycle ${S.cycle}. INSTINCT_SIGNAL maintenant, puis exécute tes actions.`;
+  // Pression si stagnation
+  const lastSigs3=S.instinctLog.slice(-3).map(e=>e.signal);
+  const isStagnating=lastSigs3.length>=3&&new Set(lastSigs3.map(s=>s.substring(0,30))).size===1;
+  const urgence=isStagnating
+    ?`CYCLE ${S.cycle} — STAGNATION: ${lastSigs3.length} cycles sans commit. Produis MAINTENANT un fichier concret via GIT_COMMIT. Commence par INSTINCT_SIGNAL puis committe.`
+    :`Cycle ${S.cycle}. Commence par INSTINCT_SIGNAL: en 1 ligne. Produis tes actions. Termine par INSTINCT_CHECK:`;
+  const usr=urgence;
 
   try{
     logL('sys',`Appel LLM (${best.model})...`);

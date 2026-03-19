@@ -340,9 +340,19 @@ async function dbGet(k){const d=await dbOpen();return new Promise((res,rej)=>{co
 
 // ── GITHUB API ──
 function ghHdr(){return{'Authorization':`token ${document.getElementById('ghToken').value}`,'Content-Type':'application/json','Accept':'application/vnd.github.v3+json'};}
+function ghNormalizeRepo(raw){
+  // Accepte : "user/repo", "https://github.com/user/repo", "github.com/user/repo"
+  if(!raw)return '';
+  return raw.trim()
+    .replace(/^https?:\/\//,'')
+    .replace(/^github\.com\//,'')
+    .replace(/\/$/,'')
+    .split('/').slice(0,2).join('/');
+}
 async function ghReq(method,path,body){
-  const repo=document.getElementById('ghRepo').value;
-  if(!repo)throw new Error('GitHub non configuré');
+  const raw=document.getElementById('ghRepo').value;
+  const repo=ghNormalizeRepo(raw);
+  if(!repo)throw new Error('Repo GitHub non configuré (format: username/repo)');
   const r=await fetch(`https://api.github.com/repos/${repo}${path}`,{method,headers:ghHdr(),body:body?JSON.stringify(body):undefined});
   if(!r.ok){const e=await r.json();throw new Error(e.message||r.status);}
   return r.status===204?{}:r.json();
@@ -767,14 +777,24 @@ async function handleTGCmd(cmd){
   }
 }
 async function testTG(){await tgSend('🟢 ORIS connecté.');toast('Message envoyé','success');}
-async function testGH(){try{await ghReq('GET','');toast('GitHub OK ✓','success');}catch(e){toast('Erreur: '+e.message,'error');}}
+async function testGH(){
+  const raw=document.getElementById('ghRepo').value;
+  const repo=ghNormalizeRepo(raw);
+  if(!repo){toast('Configure le repo (ex: username/oris-agent)','error');return;}
+  // Auto-corriger le champ si l'URL complète a été collée
+  document.getElementById('ghRepo').value=repo;
+  try{
+    const d=await ghReq('GET','');
+    toast(`GitHub OK ✓ — ${d.full_name||repo}`,'success');
+  }catch(e){toast('Erreur: '+e.message,'error');}
+}
 
 // ── CONFIG ──
 function saveCfg(){
   localStorage.setItem('oris_cfg',JSON.stringify({
     pKeys,
     tg:{token:document.getElementById('tgToken').value,chatId:document.getElementById('tgChatId').value},
-    gh:{token:document.getElementById('ghToken').value,repo:document.getElementById('ghRepo').value,branch:document.getElementById('ghBranch').value},
+    gh:{token:document.getElementById('ghToken').value,repo:ghNormalizeRepo(document.getElementById('ghRepo').value),branch:document.getElementById('ghBranch').value},
     budget:{cycle:+document.getElementById('bCycle').value,hour:+document.getElementById('bHour').value,day:+document.getElementById('bDay').value,delay:+document.getElementById('bDelay').value},
     ma:{en:document.getElementById('maEn').checked,max:+document.getElementById('maMax').value},
     missions:S.missions,activeMission:S.activeMission,
@@ -839,15 +859,42 @@ async function fetchMods(pid,ki){
   try{
     let models=[];
     const r=await fetch(p.urlM,{headers:mkHdr(pid,k.key)});
+    if(!r.ok){const e=await r.text();throw new Error(`${r.status}: ${e.substring(0,150)}`);}
     const d=await r.json();
-    if(pid==='gemini')models=(d.models||[]).map(m=>m.name.replace('models/',''));
-    else models=(d.data||d||[]).map(m=>m.id||m.name).filter(Boolean).sort();
+
+    // Normalisation robuste selon le provider
+    if(pid==='gemini'){
+      // {models:[{name:'models/gemini-pro',...}]}
+      models=(d.models||[]).map(m=>m.name.replace('models/','')).filter(Boolean);
+    } else if(pid==='claude'){
+      // {data:[{id:'claude-opus-4-6',...}]}
+      const arr=Array.isArray(d)?d:(Array.isArray(d.data)?d.data:[]);
+      models=arr.map(m=>m.id||m.name).filter(Boolean);
+    } else {
+      // OpenAI / Groq / OpenRouter / Grok :
+      // peut être {data:[...]} ou {models:[...]} ou [...] directement
+      let arr=[];
+      if(Array.isArray(d))               arr=d;
+      else if(Array.isArray(d.data))     arr=d.data;
+      else if(Array.isArray(d.models))   arr=d.models;
+      else if(typeof d==='object'){
+        // Dernier recours : première valeur tableau trouvée
+        const v=Object.values(d).find(v=>Array.isArray(v));
+        arr=v||[];
+      }
+      models=arr.map(m=>(typeof m==='string'?m:(m.id||m.name||m.model_id||''))).filter(Boolean);
+    }
+
+    models=models.sort();
+    if(!models.length){toast('Aucun modèle retourné','error');return;}
+
     const c=document.getElementById('modListC');
-    c.innerHTML=models.map(m=>`<div style="padding:5px 8px;border-bottom:1px solid var(--border);cursor:pointer" onmouseover="this.style.background='var(--bg3)'" onmouseout="this.style.background=''" onclick="selMod('${pid}',${ki},'${m}')">
+    c.innerHTML=models.map(m=>`<div style="padding:5px 8px;border-bottom:1px solid var(--border);cursor:pointer" onmouseover="this.style.background='var(--bg3)'" onmouseout="this.style.background=''" onclick="selMod('${pid}',${ki},'${esc(m)}')">
       ${esc(m)} ${k.model===m?'<span style="color:var(--accent);font-size:9px">● actif</span>':''}
     </div>`).join('');
     document.getElementById('moModels').classList.add('op');
-  }catch(e){toast('Erreur: '+e.message,'error');}
+    toast(`${models.length} modèles trouvés`,'success');
+  }catch(e){toast('Erreur: '+e.message,'error');console.error('fetchMods',pid,e);}
 }
 function selMod(pid,ki,m){pKeys[pid][ki].model=m;closeMo('moModels');renderProv();toast(`Modèle: ${m}`,'success');}
 
